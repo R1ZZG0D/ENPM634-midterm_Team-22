@@ -1,0 +1,17 @@
+body {
+    background: #f4f6f8;
+}
+
+.avatar {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+}
+
+.bio-box {
+    background: #fff;
+    border: 1px solid #d8dee4;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    min-height: 6rem;
+}

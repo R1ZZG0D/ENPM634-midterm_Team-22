@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<article class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h1 class="h2">{{ post.title }}</h1>
+        <p class="text-muted">By {{ post.username }} on {{ post.created_at }}</p>
+        <div class="mb-3">{{ post.content }}</div>
+        {% if current_user and current_user.id == post.author_id %}
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('posts.edit_post', post_id=post.id) }}">Edit</a>
+        <form class="d-inline" method="post" action="{{ url_for('posts.delete_post', post_id=post.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+        </form>
+        {% endif %}
+    </div>
+</article>
+
+<section class="mb-4">
+    <h2 class="h4">Comments</h2>
+    {% for comment in comments %}
+    <div class="card mb-2">
+        <div class="card-body">
+            <p class="small text-muted mb-1">{{ comment.username }} on {{ comment.created_at }}</p>
+            <div>{{ comment.comment_text|safe }}</div>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No comments yet.</p>
+    {% endfor %}
+</section>
+
+{% if current_user %}
+<section class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="h5">Leave a comment</h2>
+        <form method="post" action="{{ url_for('posts.add_comment', post_id=post.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="mb-3">
+                <textarea class="form-control" name="comment_text" rows="4" required></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Post comment</button>
+        </form>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

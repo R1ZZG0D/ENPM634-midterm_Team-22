@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h3">Search Posts</h1>
+                <form method="get" action="{{ url_for('search.search') }}">
+                    <div class="input-group">
+                        <input class="form-control" name="q" value="{{ query }}" placeholder="Search titles">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if query %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <p class="lead">Matches found: {{ total }}</p>
+        <ul class="mb-0">
+            {% for result in results %}
+            <li><a href="{{ url_for('posts.view_post', post_id=result.id) }}">{{ result.title }}</a></li>
+            {% else %}
+            <li>No titles matched your search.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h4">Account Settings</h1>
+                <p class="text-muted">Current email: {{ user.email }}</p>
+                <form method="post" action="{{ url_for('profile.change_email') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="mb-3">
+                        <label class="form-label">New email</label>
+                        <input class="form-control" name="email" type="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm password</label>
+                        <input class="form-control" name="confirm_password" type="password" required>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Request email change</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h4">Verification</h2>
+                <p>Complete the email verification step if a pending address exists.</p>
+                <form method="post" action="{{ url_for('profile.verify_email') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Email to verify</label>
+                        <input class="form-control" name="email" type="email" placeholder="Leave blank to use pending email">
+                    </div>
+                    <button class="btn btn-outline-primary" type="submit">Verify email</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

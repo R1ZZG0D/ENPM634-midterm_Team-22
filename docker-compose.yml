@@ -1,0 +1,13 @@
+services:
+  enpm634_midterm_team22:
+    build: .
+    container_name: enpm634_midterm_team22
+    ports:
+      - "5000:5000"
+    volumes:
+      - enpm634_midterm_team22_db:/app/database
+      - enpm634_midterm_team22_uploads:/app/app/static/uploads
+
+volumes:
+  enpm634_midterm_team22_db:
+  enpm634_midterm_team22_uploads:

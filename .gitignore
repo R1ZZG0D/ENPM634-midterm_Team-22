@@ -1,0 +1,11 @@
+.venv/
+.pdf_preview/
+__pycache__/
+*.py[cod]
+database/*.db
+.pdf_test.pdf
+ENPM634_midterm-Team22_Vulnerability_Disclosure.pdf
+ENPM634_midterm-Team22_Vulnerability_Disclosure.txt
+generate_disclosure_pdf.py
+skills.md
+.DS_Store

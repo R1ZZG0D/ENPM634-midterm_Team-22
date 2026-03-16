@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h3 mb-3">{% if post %}Edit Post{% else %}Create Post{% endif %}</h1>
+                <form method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input class="form-control" name="title" value="{{ post.title if post else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Content</label>
+                        <textarea class="form-control" name="content" rows="8" required>{{ post.content if post else '' }}</textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit">{% if post %}Save changes{% else %}Publish{% endif %}</button>
+                    {% if not post %}
+                    <button class="btn btn-outline-secondary" type="submit" name="save_as_draft" value="1">Save as draft</button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

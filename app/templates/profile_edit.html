@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h3 mb-3">Edit Profile</h1>
+                <form method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="mb-3">
+                        <label class="form-label">Bio</label>
+                        <textarea class="form-control" name="bio" rows="6">{{ user.bio }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Avatar upload</label>
+                        <input class="form-control" type="file" name="avatar">
+                    </div>
+                    <button class="btn btn-primary" type="submit">Save profile</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

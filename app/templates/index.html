@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-4 mb-4 bg-light rounded-3 border">
+    <h1 class="display-6">Training Blog Platform</h1>
+    <p class="mb-0">A small Flask blogging app with profiles, drafts, comments, and admin moderation.</p>
+</div>
+
+<div class="row g-4">
+    {% for post in posts %}
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h3 class="h5">{{ post.title }}</h3>
+                <p class="text-muted small mb-2">By {{ post.username }} on {{ post.created_at }}</p>
+                <p>{{ post.content[:180] }}{% if post.content|length > 180 %}...{% endif %}</p>
+                <a class="btn btn-outline-primary btn-sm" href="{{ url_for('posts.view_post', post_id=post.id) }}">Read post</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p>No posts yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

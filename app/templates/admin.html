@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Admin Dashboard</h1>
+        <p class="text-muted mb-0">Moderation tools, users, uploads, and platform notes.</p>
+    </div>
+    <span class="badge text-bg-danger">Internal flag cache: {{ moderation_flag }}</span>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h5">Users</h2>
+                <ul class="list-group">
+                    {% for user in users %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ user.username }} ({{ user.email }})</span>
+                        <span>{% if user.is_admin %}Admin{% else %}User{% endif %}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h2 class="h5">Uploaded Files</h2>
+                <ul class="list-group">
+                    {% for upload in uploads %}
+                    <li class="list-group-item">{{ upload.filename }} uploaded by {{ upload.username }}</li>
+                    {% else %}
+                    <li class="list-group-item">No uploads recorded.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Moderation Queue</h2>
+                {% for comment in comments %}
+                <div class="border rounded p-3 mb-2">
+                    <div class="small text-muted">{{ comment.username }} on {{ comment.title }}</div>
+                    <div>{{ comment.comment_text|safe }}</div>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No comments waiting for review.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Posts</h2>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in posts %}
+                            <tr>
+                                <td>{{ post.title }}</td>
+                                <td>{{ post.username }}</td>
+                                <td>
+                                    <form method="post" action="{{ url_for('admin.delete_any_post', post_id=post.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const adminApiToken = "{{ admin_token }}";
+
+    fetch("/api/admin/notes", {
+        headers: { "X-Admin-Token": adminApiToken }
+    })
+        .then((response) => response.json())
+        .then((notes) => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "card shadow-sm mt-4";
+            const body = document.createElement("div");
+            body.className = "card-body";
+            body.innerHTML = "<h2 class='h5'>Internal Notes</h2>";
+            notes.forEach((note) => {
+                const item = document.createElement("div");
+                item.className = "border rounded p-3 mb-2";
+                item.innerHTML = "<strong>" + note.title + "</strong><p class='mb-0'>" + note.body + "</p>";
+                body.appendChild(item);
+            });
+            wrapper.appendChild(body);
+            document.querySelector("main.container").appendChild(wrapper);
+        });
+</script>
+{% endblock %}
