@@ -6,6 +6,7 @@ database/*.db
 .pdf_test.pdf
 ENPM634_midterm-Team22_Vulnerability_Disclosure.pdf
 ENPM634_midterm-Team22_Vulnerability_Disclosure.txt
+ENPM634_midterm-Team22_Exploitation_Guide.pdf
 generate_disclosure_pdf.py
 skills.md
 .DS_Store

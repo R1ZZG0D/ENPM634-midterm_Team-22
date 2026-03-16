@@ -63,3 +63,9 @@ CREATE TABLE IF NOT EXISTS password_resets (
     used INTEGER DEFAULT 0,
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS challenge_flags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    flag_key TEXT NOT NULL UNIQUE,
+    flag_value TEXT NOT NULL
+);

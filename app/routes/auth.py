@@ -3,7 +3,7 @@ import secrets
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from app.database import BLIND_SQLI_FLAG, get_connection
+from app.database import get_connection
 from app.utils.security import generate_csrf_token, validate_csrf
 
 
@@ -62,13 +62,7 @@ def login():
                 (identity, identity),
             ).fetchone()
 
-        bootstrap_admin_login = (
-            user
-            and user["username"] == "admin"
-            and user["password"] == BLIND_SQLI_FLAG
-            and password == "admin123"
-        )
-        if not user or (user["password"] != password and not bootstrap_admin_login):
+        if not user or user["password"] != password:
             flash("Invalid credentials.", "danger")
             return redirect(url_for("auth.login"))
 

@@ -36,5 +36,30 @@
             </div>
         </div>
     </div>
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h4">Support Review</h2>
+                <p class="text-muted">Request an automated staff review of an internal page path.</p>
+                <form method="post" action="{{ url_for('profile.request_review') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="mb-3">
+                        <label class="form-label">Internal page path</label>
+                        <input
+                            class="form-control"
+                            name="review_path"
+                            value="/support/email-preview?email=takeover@maildrop.local"
+                            required
+                        >
+                    </div>
+                    <p class="small text-muted mb-3">
+                        Example preview page:
+                        <code>{{ url_for('profile.support_email_preview') }}?email=takeover@maildrop.local</code>
+                    </p>
+                    <button class="btn btn-outline-secondary" type="submit">Request review</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

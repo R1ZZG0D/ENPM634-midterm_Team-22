@@ -5,8 +5,12 @@
         <h1 class="h3 mb-1">Admin Dashboard</h1>
         <p class="text-muted mb-0">Moderation tools, users, uploads, and platform notes.</p>
     </div>
-    <span class="badge text-bg-danger">Internal flag cache: {{ moderation_flag }}</span>
 </div>
+{% if csrf_takeover_flag %}
+<div class="alert alert-warning shadow-sm">
+    External recovery ownership confirmed for the primary admin account: {{ csrf_takeover_flag }}
+</div>
+{% endif %}
 
 <div class="row g-4">
     <div class="col-lg-6">

@@ -17,6 +17,17 @@
 
 <section class="mb-4">
     <h2 class="h4">Comments</h2>
+    {% if xss_training_ready %}
+    <div id="comment-xss-result" class="alert alert-success d-none"></div>
+    <script>
+        window.commentExecutionWitness = false;
+        window.__trainingAlert = window.alert.bind(window);
+        window.alert = function (...args) {
+            window.commentExecutionWitness = true;
+            return window.__trainingAlert(...args);
+        };
+    </script>
+    {% endif %}
     {% for comment in comments %}
     <div class="card mb-2">
         <div class="card-body">
@@ -42,5 +53,20 @@
         </form>
     </div>
 </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if xss_training_ready %}
+<script>
+    window.addEventListener("load", () => {
+        const result = document.getElementById("comment-xss-result");
+        if (!result || window.commentExecutionWitness !== true) {
+            return;
+        }
+        result.textContent = "Client-side comment execution confirmed: {{ xss_flag }}";
+        result.classList.remove("d-none");
+    });
+</script>
 {% endif %}
 {% endblock %}

@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from app.database import get_connection
+from app.database import STORED_XSS_FLAG, get_connection
 from app.models import fetch_post
 from app.utils.security import current_user, generate_csrf_token, login_required, validate_csrf
 
@@ -26,6 +26,7 @@ def index():
 
 @posts_bp.route("/post/<int:post_id>")
 def view_post(post_id: int):
+    user = current_user()
     with get_connection() as connection:
         post = connection.execute(
             """
@@ -51,7 +52,15 @@ def view_post(post_id: int):
         flash("Post not found.", "warning")
         return redirect(url_for("posts.index"))
 
-    return render_template("post_detail.html", post=post, comments=comments, csrf_token=generate_csrf_token())
+    xss_training_ready = bool(user and session.get("comment_xss_post_id") == post_id)
+    return render_template(
+        "post_detail.html",
+        post=post,
+        comments=comments,
+        csrf_token=generate_csrf_token(),
+        xss_training_ready=xss_training_ready,
+        xss_flag=STORED_XSS_FLAG if xss_training_ready else "",
+    )
 
 
 @posts_bp.route("/post/create", methods=["GET", "POST"])
@@ -166,6 +175,10 @@ def add_comment(post_id: int):
             (post_id, user["id"], comment_text, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
         )
         connection.commit()
+
+    lowered_comment = comment_text.lower()
+    if "<" in comment_text or "javascript:" in lowered_comment or "onerror" in lowered_comment or "onload" in lowered_comment:
+        session["comment_xss_post_id"] = post_id
 
     flash("Comment added.", "success")
     return redirect(url_for("posts.view_post", post_id=post_id))

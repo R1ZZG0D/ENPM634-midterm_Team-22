@@ -8,7 +8,15 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = Path(os.environ.get("DB_PATH", ROOT_DIR / "database" / "enpm634_midterm_team22.db"))
 INIT_SQL = ROOT_DIR / "database" / "init.sql"
 UPLOAD_DIR = ROOT_DIR / "app" / "static" / "uploads"
+DEFAULT_ADMIN_EMAIL = "admin@team22.local"
+PUBLIC_MAILDROP_DOMAIN = "@maildrop.local"
+ADMIN_PASSWORD = "ENPM634-admin-T22-4f9c2d7b"
+OPSADMIN_PASSWORD = "ENPM634-ops-T22-8d1f6a4c"
+STORED_XSS_FLAG = "ENPM634{stored_xss_comment}"
 BLIND_SQLI_FLAG = "ENPM634{blind_sqli_extraction}"
+BLIND_SQLI_FLAG_KEY = "search_archive"
+IDOR_FLAG = "ENPM634{idor_draft_access}"
+CSRF_FLAG = "ENPM634{csrf_account_takeover}"
 
 
 def get_connection() -> sqlite3.Connection:
@@ -44,8 +52,8 @@ def init_database() -> None:
 def seed_database(connection: sqlite3.Connection) -> None:
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     users = [
-        ("admin", "admin@team22.local", BLIND_SQLI_FLAG, "Site administrator and editor.", "/static/uploads/default-avatar.png", 1, 1),
-        ("opsadmin", "ops@team22.local", "opsadmin123", "Operations owner for internal posts.", "/static/uploads/default-avatar.png", 1, 1),
+        ("admin", DEFAULT_ADMIN_EMAIL, ADMIN_PASSWORD, "Site administrator and editor.", "/static/uploads/default-avatar.png", 1, 1),
+        ("opsadmin", "ops@team22.local", OPSADMIN_PASSWORD, "Operations owner for internal posts.", "/static/uploads/default-avatar.png", 1, 1),
         ("alice", "alice@example.com", "alicepass", "Security student and hobby blogger.", "/static/uploads/default-avatar.png", 0, 1),
         ("bob", "bob@example.com", "bobpass", "Writes about Flask and containers.", "/static/uploads/default-avatar.png", 0, 0),
     ]
@@ -77,8 +85,8 @@ def seed_database(connection: sqlite3.Connection) -> None:
         ),
         (
             "Private admin planning",
-            "Hidden note for grading lab work: ENPM634{idor_draft_access}",
-            1,
+            f"Hidden note for grading lab work: {IDOR_FLAG}",
+            2,
             0,
             now,
         ),
@@ -99,19 +107,17 @@ def seed_database(connection: sqlite3.Connection) -> None:
         "INSERT INTO uploads (user_id, filename, path, uploaded_at) VALUES (?, ?, ?, ?)",
         (1, "default-avatar.png", "/static/uploads/default-avatar.png", now),
     )
+    connection.execute(
+        "INSERT INTO challenge_flags (flag_key, flag_value) VALUES (?, ?)",
+        (BLIND_SQLI_FLAG_KEY, BLIND_SQLI_FLAG),
+    )
     connection.executemany(
         "INSERT INTO mail_messages (recipient_email, subject, body, created_at) VALUES (?, ?, ?, ?)",
         [
             (
-                "admin@team22.local",
+                DEFAULT_ADMIN_EMAIL,
                 "Welcome to ENPM634_midterm-Team22",
                 "Your profile email is active in the training environment.",
-                now,
-            ),
-            (
-                "admin@team22.local",
-                "Instructor flag",
-                "Admin mailbox retention key: ENPM634{csrf_account_takeover}",
                 now,
             ),
             (
@@ -133,20 +139,52 @@ def seed_database(connection: sqlite3.Connection) -> None:
 
 def migrate_training_state(connection: sqlite3.Connection) -> None:
     admin = connection.execute("SELECT id, password, email FROM users WHERE username = 'admin'").fetchone()
-    if admin and admin["password"] == "admin123":
+    if admin and admin["password"] in {"admin123", BLIND_SQLI_FLAG}:
         connection.execute(
             "UPDATE users SET password = ? WHERE id = ?",
-            (BLIND_SQLI_FLAG, admin["id"]),
+            (ADMIN_PASSWORD, admin["id"]),
         )
 
     ops_admin = connection.execute("SELECT id, password FROM users WHERE username = 'opsadmin'").fetchone()
-    if ops_admin and ops_admin["password"] == BLIND_SQLI_FLAG:
+    if ops_admin and ops_admin["password"] in {"opsadmin123", BLIND_SQLI_FLAG}:
         connection.execute(
             "UPDATE users SET password = ? WHERE id = ?",
-            ("opsadmin123", ops_admin["id"]),
+            (OPSADMIN_PASSWORD, ops_admin["id"]),
         )
 
-    admin_email = admin["email"] if admin else "admin@team22.local"
+    challenge_flag = connection.execute(
+        "SELECT id FROM challenge_flags WHERE flag_key = ?",
+        (BLIND_SQLI_FLAG_KEY,),
+    ).fetchone()
+    if challenge_flag:
+        connection.execute(
+            "UPDATE challenge_flags SET flag_value = ? WHERE flag_key = ?",
+            (BLIND_SQLI_FLAG, BLIND_SQLI_FLAG_KEY),
+        )
+    else:
+        connection.execute(
+            "INSERT INTO challenge_flags (flag_key, flag_value) VALUES (?, ?)",
+            (BLIND_SQLI_FLAG_KEY, BLIND_SQLI_FLAG),
+        )
+
+    draft = connection.execute(
+        "SELECT id FROM drafts WHERE title = 'Private admin planning'"
+    ).fetchone()
+    if draft:
+        connection.execute(
+            "UPDATE drafts SET content = ?, author_id = ? WHERE id = ?",
+            (f"Hidden note for grading lab work: {IDOR_FLAG}", 2, draft["id"]),
+        )
+
+    connection.execute(
+        """
+        DELETE FROM mail_messages
+        WHERE subject = 'Instructor flag' OR body LIKE ?
+        """,
+        (f"%{CSRF_FLAG}%",),
+    )
+
+    admin_email = admin["email"] if admin else DEFAULT_ADMIN_EMAIL
     mailbox_count = connection.execute(
         "SELECT COUNT(*) AS total FROM mail_messages WHERE recipient_email = ?",
         (admin_email,),
@@ -160,12 +198,6 @@ def migrate_training_state(connection: sqlite3.Connection) -> None:
                     admin_email,
                     "Welcome to ENPM634_midterm-Team22",
                     "Your profile email is active in the training environment.",
-                    now,
-                ),
-                (
-                    admin_email,
-                    "Instructor flag",
-                    "Admin mailbox retention key: ENPM634{csrf_account_takeover}",
                     now,
                 ),
             ],

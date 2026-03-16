@@ -2,7 +2,10 @@
 {% block content %}
 <div class="card shadow-sm">
     <div class="card-body">
-        <h1 class="h3">Mailbox for {{ user.email }}</h1>
+        <h1 class="h3">Mailbox for {{ mailbox_email }}</h1>
+        {% if public_maildrop %}
+        <p class="text-muted">Public maildrop preview for local training addresses.</p>
+        {% endif %}
         {% for message in messages %}
         <div class="border rounded p-3 mb-3">
             <h2 class="h5">{{ message.subject }}</h2>

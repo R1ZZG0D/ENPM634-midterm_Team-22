@@ -1,8 +1,8 @@
 import os
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
-from app.database import get_connection
+from app.database import CSRF_FLAG, DEFAULT_ADMIN_EMAIL, get_connection
 from app.utils.security import admin_required, current_user, generate_csrf_token, login_required, validate_csrf
 
 
@@ -14,6 +14,7 @@ ADMIN_API_TOKEN = "enpm634-midterm-team22-admin-api-token"
 @login_required
 @admin_required
 def dashboard():
+    user = current_user()
     with get_connection() as connection:
         users = connection.execute("SELECT * FROM users ORDER BY id ASC").fetchall()
         uploads = connection.execute(
@@ -50,7 +51,7 @@ def dashboard():
         posts=posts,
         csrf_token=generate_csrf_token(),
         admin_token=ADMIN_API_TOKEN,
-        moderation_flag="ENPM634{stored_xss_comment}",
+        csrf_takeover_flag=CSRF_FLAG if user["username"] == "admin" and user["email"] != DEFAULT_ADMIN_EMAIL else None,
     )
 
 
