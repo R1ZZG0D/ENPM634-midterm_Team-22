@@ -19,8 +19,12 @@
                 <h2 class="h5">Users</h2>
                 <ul class="list-group">
                     {% for user in users %}
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>{{ user.username }} ({{ user.email }})</span>
+                    <li class="list-group-item d-flex justify-content-between gap-3">
+                        <div>
+                            <div>{{ user.username }} ({{ user.email }})</div>
+                            <div class="small text-muted">Profile bio snapshot</div>
+                            <div class="small">{{ user.bio|safe }}</div>
+                        </div>
                         <span>{% if user.is_admin %}Admin{% else %}User{% endif %}</span>
                     </li>
                     {% endfor %}

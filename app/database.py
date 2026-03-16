@@ -17,6 +17,9 @@ BLIND_SQLI_FLAG = "ENPM634{blind_sqli_extraction}"
 BLIND_SQLI_FLAG_KEY = "search_archive"
 IDOR_FLAG = "ENPM634{idor_draft_access}"
 CSRF_FLAG = "ENPM634{csrf_account_takeover}"
+FULL_CHAIN_FLAG = "ENPM634{full_chain_rce}"
+FINAL_CHAIN_MAILDROP = "ops-audit@maildrop.local"
+STALE_RCE_FILENAME = "rce-flag.txt"
 
 
 def get_connection() -> sqlite3.Connection:
@@ -138,6 +141,10 @@ def seed_database(connection: sqlite3.Connection) -> None:
 
 
 def migrate_training_state(connection: sqlite3.Connection) -> None:
+    stale_flag_file = UPLOAD_DIR / STALE_RCE_FILENAME
+    if stale_flag_file.exists():
+        stale_flag_file.unlink()
+
     admin = connection.execute("SELECT id, password, email FROM users WHERE username = 'admin'").fetchone()
     if admin and admin["password"] in {"admin123", BLIND_SQLI_FLAG}:
         connection.execute(
@@ -179,9 +186,12 @@ def migrate_training_state(connection: sqlite3.Connection) -> None:
     connection.execute(
         """
         DELETE FROM mail_messages
-        WHERE subject = 'Instructor flag' OR body LIKE ?
+        WHERE subject = 'Instructor flag'
+           OR body LIKE ?
+           OR body LIKE ?
+           OR recipient_email = ?
         """,
-        (f"%{CSRF_FLAG}%",),
+        (f"%{CSRF_FLAG}%", f"%{FULL_CHAIN_FLAG}%", FINAL_CHAIN_MAILDROP),
     )
 
     admin_email = admin["email"] if admin else DEFAULT_ADMIN_EMAIL

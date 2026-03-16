@@ -80,6 +80,7 @@ def admin_notes():
     notes = [
         {"title": "Operations", "body": "Do not expose internal maintenance tools to public users."},
         {"title": "Scheduler", "body": "Background cleanup still runs through maintenance.py."},
+        {"title": "Audit trail", "body": "Maintenance snippets are delivered to operator inboxes instead of flat files."},
     ]
     return jsonify(notes)
 
