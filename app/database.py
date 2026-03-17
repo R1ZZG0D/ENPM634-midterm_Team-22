@@ -70,7 +70,13 @@ def seed_database(connection: sqlite3.Connection) -> None:
 
     posts = [
         ("Welcome to ENPM634_midterm-Team22", "This is the first post on the platform.", 1, now),
-        ("Docker Notes", "Container builds are automatic in this demo environment.", 4, now),
+        (
+            "Docker Notes",
+            "Container builds are automatic in this demo environment. "
+            "Default workdir remains anchored under /app and legacy smoke-test artifacts still live in /opt.",
+            4,
+            now,
+        ),
         ("Campus Security Club", "We meet every Friday to practice web testing.", 3, now),
     ]
     connection.executemany(
@@ -88,7 +94,10 @@ def seed_database(connection: sqlite3.Connection) -> None:
         ),
         (
             "Private admin planning",
-            f"Hidden note for grading lab work: {IDOR_FLAG}",
+            (
+                f"Hidden note for grading lab work: {IDOR_FLAG} "
+                "Ops audit summaries still route to ops-audit@maildrop.local, and dry-run output should never land in the web root."
+            ),
             2,
             0,
             now,
@@ -180,7 +189,29 @@ def migrate_training_state(connection: sqlite3.Connection) -> None:
     if draft:
         connection.execute(
             "UPDATE drafts SET content = ?, author_id = ? WHERE id = ?",
-            (f"Hidden note for grading lab work: {IDOR_FLAG}", 2, draft["id"]),
+            (
+                (
+                    f"Hidden note for grading lab work: {IDOR_FLAG} "
+                    "Ops audit summaries still route to ops-audit@maildrop.local, and dry-run output should never land in the web root."
+                ),
+                2,
+                draft["id"],
+            ),
+        )
+
+    docker_notes = connection.execute(
+        "SELECT id FROM posts WHERE title = 'Docker Notes'"
+    ).fetchone()
+    if docker_notes:
+        connection.execute(
+            "UPDATE posts SET content = ? WHERE id = ?",
+            (
+                (
+                    "Container builds are automatic in this demo environment. "
+                    "Default workdir remains anchored under /app and legacy smoke-test artifacts still live in /opt."
+                ),
+                docker_notes["id"],
+            ),
         )
 
     connection.execute(

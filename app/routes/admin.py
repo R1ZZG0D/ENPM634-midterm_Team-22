@@ -81,6 +81,7 @@ def admin_notes():
         {"title": "Operations", "body": "Do not expose internal maintenance tools to public users."},
         {"title": "Scheduler", "body": "Background cleanup still runs through maintenance.py."},
         {"title": "Audit trail", "body": "Maintenance snippets are delivered to operator inboxes instead of flat files."},
+        {"title": "Queue health", "body": "The audit relay still writes through the local SQLite mail queue."},
     ]
     return jsonify(notes)
 
