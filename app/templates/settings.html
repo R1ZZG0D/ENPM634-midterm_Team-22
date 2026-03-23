@@ -46,7 +46,7 @@
             <div class="card-body">
                 <h2 class="h4">Support Review</h2>
                 <p class="text-muted">
-                    Request an automated staff review of an internal page path. Only site-local paths are accepted.
+                    Request an automated staff review of an internal page path. Only site-local paths are accepted. Example email address: email@maildrop.local
                 </p>
                 <form method="post" action="{{ url_for('profile.request_review') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

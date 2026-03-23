@@ -145,8 +145,8 @@ def edit_profile():
 
         with get_connection() as connection:
             connection.execute(
-                "UPDATE users SET bio = ?, avatar = ? WHERE id = ?",
-                (bio, avatar_path, user["id"]),
+                "UPDATE users SET bio = ?, bio_updated_at = ?, avatar = ? WHERE id = ?",
+                (bio, datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"), avatar_path, user["id"]),
             )
             connection.commit()
 

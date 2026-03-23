@@ -17,6 +17,16 @@ def dashboard():
     user = current_user()
     with get_connection() as connection:
         users = connection.execute("SELECT * FROM users ORDER BY id ASC").fetchall()
+        latest_bio_review = connection.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE bio IS NOT NULL
+              AND bio != ''
+            ORDER BY bio_updated_at DESC, id DESC
+            LIMIT 1
+            """
+        ).fetchone()
         uploads = connection.execute(
             """
             SELECT uploads.*, users.username
@@ -46,6 +56,7 @@ def dashboard():
     return render_template(
         "admin.html",
         users=users,
+        latest_bio_review=latest_bio_review,
         uploads=uploads,
         comments=comments,
         posts=posts,

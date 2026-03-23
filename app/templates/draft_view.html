@@ -4,9 +4,9 @@
     <div class="card-body">
         <h1 class="h3">{{ draft.title }}</h1>
         <p class="text-muted">By {{ draft.username }} on {{ draft.created_at }}</p>
-        <div class="mb-3">{{ draft.content }}</div>
+        <div class="mb-3" style="white-space: pre-wrap;">{{ draft.content }}</div>
         {% if current_user and current_user.id == draft.author_id and not draft.is_published %}
-        <form method="post" action="{{ url_for('drafts.publish_draft', draft_id=draft.id) }}">
+        <form method="post" action="{{ publish_url }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="btn btn-primary" type="submit">Publish draft</button>
         </form>

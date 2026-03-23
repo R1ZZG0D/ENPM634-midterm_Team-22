@@ -14,9 +14,9 @@
                 <p class="mb-1 text-muted">{{ draft.created_at }}</p>
             </div>
             <div>
-                <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('drafts.view_draft', draft_id=draft.id) }}">View</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('drafts.view_draft', draft_id=draft.public_id) }}">View</a>
                 {% if not draft.is_published %}
-                <form class="d-inline" method="post" action="{{ url_for('drafts.publish_draft', draft_id=draft.id) }}">
+                <form class="d-inline" method="post" action="{{ url_for('drafts.publish_draft', draft_id=draft.public_id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button class="btn btn-outline-primary btn-sm" type="submit">Publish</button>
                 </form>

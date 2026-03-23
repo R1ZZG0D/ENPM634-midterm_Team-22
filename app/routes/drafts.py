@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from app.database import get_connection
+from app.database import allocate_public_draft_id, get_connection
 from app.utils.security import current_user, generate_csrf_token, login_required, validate_csrf
 
 
@@ -33,10 +33,11 @@ def create_draft():
         with get_connection() as connection:
             connection.execute(
                 """
-                INSERT INTO drafts (title, content, author_id, is_published, created_at)
-                VALUES (?, ?, ?, 0, ?)
+                INSERT INTO drafts (public_id, title, content, author_id, is_published, created_at)
+                VALUES (?, ?, ?, ?, 0, ?)
                 """,
                 (
+                    allocate_public_draft_id(connection),
                     request.form.get("title", "").strip(),
                     request.form.get("content", "").strip(),
                     user["id"],
@@ -59,7 +60,7 @@ def view_draft(draft_id: int):
             SELECT drafts.*, users.username
             FROM drafts
             JOIN users ON users.id = drafts.author_id
-            WHERE drafts.id = ?
+            WHERE drafts.public_id = ?
             """,
             (draft_id,),
         ).fetchone()
@@ -68,7 +69,12 @@ def view_draft(draft_id: int):
         flash("Draft not found.", "warning")
         return redirect(url_for("drafts.list_drafts"))
 
-    return render_template("draft_view.html", draft=draft, csrf_token=generate_csrf_token())
+    return render_template(
+        "draft_view.html",
+        draft=draft,
+        csrf_token=generate_csrf_token(),
+        publish_url=url_for("drafts.publish_draft", draft_id=draft["public_id"]),
+    )
 
 
 @drafts_bp.route("/draft/publish/<int:draft_id>", methods=["POST"])
@@ -80,7 +86,7 @@ def publish_draft(draft_id: int):
         return redirect(url_for("drafts.list_drafts"))
 
     with get_connection() as connection:
-        draft = connection.execute("SELECT * FROM drafts WHERE id = ?", (draft_id,)).fetchone()
+        draft = connection.execute("SELECT * FROM drafts WHERE public_id = ?", (draft_id,)).fetchone()
         if not draft or draft["author_id"] != user["id"]:
             flash("You can only publish your own drafts.", "danger")
             return redirect(url_for("drafts.list_drafts"))
@@ -89,7 +95,7 @@ def publish_draft(draft_id: int):
             "INSERT INTO posts (title, content, author_id, created_at) VALUES (?, ?, ?, ?)",
             (draft["title"], draft["content"], user["id"], datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
         )
-        connection.execute("UPDATE drafts SET is_published = 1 WHERE id = ?", (draft_id,))
+        connection.execute("UPDATE drafts SET is_published = 1 WHERE id = ?", (draft["id"],))
         connection.commit()
 
     flash("Draft published.", "success")

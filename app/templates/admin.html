@@ -22,8 +22,7 @@
                     <li class="list-group-item d-flex justify-content-between gap-3">
                         <div>
                             <div>{{ user.username }} ({{ user.email }})</div>
-                            <div class="small text-muted">Profile bio snapshot</div>
-                            <div class="small">{{ user.bio|safe }}</div>
+                            <div class="small text-muted">Role and account metadata</div>
                         </div>
                         <span>{% if user.is_admin %}Admin{% else %}User{% endif %}</span>
                     </li>
@@ -43,6 +42,21 @@
                     <li class="list-group-item">No uploads recorded.</li>
                     {% endfor %}
                 </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Latest Profile Review</h2>
+                {% if latest_bio_review %}
+                <div class="small text-muted mb-2">
+                    {{ latest_bio_review.username }} ({{ latest_bio_review.email }}) updated profile text at {{ latest_bio_review.bio_updated_at }}
+                </div>
+                <div class="border rounded p-3">{{ latest_bio_review.bio|safe }}</div>
+                {% else %}
+                <p class="text-muted mb-0">No profile updates are waiting for review.</p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -99,6 +113,7 @@
 {% block scripts %}
 <!-- ops-review: sqlite=/app/database/enpm634_midterm_team22.db table=mail_messages -->
 <!-- build-smoke: canary=/opt/flag.txt -->
+<!-- staging note: dry-run executor posts to /api/admin/run-maintenance -->
 <script>
     const adminApiToken = "{{ admin_token }}";
 
