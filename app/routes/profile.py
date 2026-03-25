@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 
-from app.database import PUBLIC_MAILDROP_DOMAIN, UPLOAD_DIR, get_connection
+from app.database import PUBLIC_MAILDROP_DOMAIN, UPLOAD_DIR, UPLOAD_FLAG, get_connection
 from app.models import fetch_user_by_username
 from app.utils.security import current_user, generate_csrf_token, login_required, validate_csrf
 
@@ -114,7 +114,8 @@ def view_profile(username: str):
             (user["id"],),
         ).fetchall()
 
-    return render_template("profile.html", profile_user=user, posts=posts)
+    upload_flag = UPLOAD_FLAG if session.get("upload_exploit_detected") else ""
+    return render_template("profile.html", profile_user=user, posts=posts, upload_flag=upload_flag)
 
 
 @profile_bp.route("/profile/edit", methods=["GET", "POST"])
@@ -130,11 +131,19 @@ def edit_profile():
         avatar_file = request.files.get("avatar")
         avatar_path = user["avatar"]
 
+        # Check if an avatar file was uploaded
         if avatar_file and avatar_file.filename:
+            # Save the file with the username prefix to avoid naming conflicts
             filename = f"{user['username']}_{avatar_file.filename}"
             save_path = UPLOAD_DIR / filename
             avatar_file.save(save_path)
             avatar_path = f"/static/uploads/{filename}"
+
+            # Extract the file extension and check for disallowed types
+            ext = avatar_file.filename.rsplit(".", 1)[-1].lower() if "." in avatar_file.filename else ""
+            if ext not in {"png", "jpg", "jpeg", "gif", "webp"}:
+                # Flag non-image uploads as exploit attempt (too simple)
+                session["upload_exploit_detected"] = True
 
             with get_connection() as connection:
                 connection.execute(

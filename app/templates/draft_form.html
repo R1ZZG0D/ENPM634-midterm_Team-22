@@ -4,16 +4,16 @@
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h1 class="h3 mb-3">Create Draft</h1>
+                <h1 class="h3 mb-3">{{ "Edit Draft" if draft else "Create Draft" }}</h1>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input class="form-control" name="title" required>
+                        <input class="form-control" name="title" value="{{ draft.title if draft else '' }}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Content</label>
-                        <textarea class="form-control" name="content" rows="8" required></textarea>
+                        <textarea class="form-control" name="content" rows="8" required>{{ draft.content if draft else '' }}</textarea>
                     </div>
                     <button class="btn btn-primary" type="submit">Save draft</button>
                 </form>

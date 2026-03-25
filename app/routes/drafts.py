@@ -51,6 +51,67 @@ def create_draft():
     return render_template("draft_form.html", csrf_token=generate_csrf_token())
 
 
+# edit an existing draft
+@drafts_bp.route("/draft/edit/<int:draft_id>", methods=["GET", "POST"])
+@login_required
+def edit_draft(draft_id: int):
+    user = current_user()
+    # grab the draft from the database
+    with get_connection() as connection:
+        draft = connection.execute(
+            "SELECT * FROM drafts WHERE public_id = ?", (draft_id,)
+        ).fetchone()
+
+    # make sure the draft exists and the user owns it
+    if not draft or draft["author_id"] != user["id"]:
+        flash("Draft not found.", "warning")
+        return redirect(url_for("drafts.list_drafts"))
+
+    if request.method == "POST":
+        # check the CSRF token
+        if not validate_csrf():
+            flash("Invalid CSRF token.", "danger")
+            return redirect(url_for("drafts.edit_draft", draft_id=draft_id))
+        # save the updated title and content
+        with get_connection() as connection:
+            connection.execute(
+                "UPDATE drafts SET title = ?, content = ? WHERE public_id = ?",
+                (request.form.get("title", "").strip(), request.form.get("content", "").strip(), draft_id),
+            )
+            connection.commit()
+        flash("Draft updated.", "success")
+        return redirect(url_for("drafts.view_draft", draft_id=draft_id))
+
+    # show the edit form with the current draft data
+    return render_template("draft_form.html", draft=draft, csrf_token=generate_csrf_token())
+
+
+# delete a draft
+@drafts_bp.route("/draft/delete/<int:draft_id>", methods=["POST"])
+@login_required
+def delete_draft(draft_id: int):
+    user = current_user()
+    # check the CSRF token
+    if not validate_csrf():
+        flash("Invalid CSRF token.", "danger")
+        return redirect(url_for("drafts.list_drafts"))
+
+    with get_connection() as connection:
+        # make sure the draft exists and the user owns it
+        draft = connection.execute(
+            "SELECT * FROM drafts WHERE public_id = ?", (draft_id,)
+        ).fetchone()
+        if not draft or draft["author_id"] != user["id"]:
+            flash("Draft not found.", "warning")
+            return redirect(url_for("drafts.list_drafts"))
+        # remove it from the database
+        connection.execute("DELETE FROM drafts WHERE public_id = ?", (draft_id,))
+        connection.commit()
+
+    flash("Draft deleted.", "success")
+    return redirect(url_for("drafts.list_drafts"))
+
+
 @drafts_bp.route("/draft/view/<int:draft_id>")
 @login_required
 def view_draft(draft_id: int):

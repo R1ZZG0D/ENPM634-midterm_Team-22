@@ -20,6 +20,11 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button class="btn btn-outline-primary btn-sm" type="submit">Publish</button>
                 </form>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('drafts.edit_draft', draft_id=draft.public_id) }}">Edit</a>
+                <form class="d-inline" method="post" action="{{ url_for('drafts.delete_draft', draft_id=draft.public_id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                </form>
                 {% endif %}
             </div>
         </div>
