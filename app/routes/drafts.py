@@ -62,7 +62,7 @@ def edit_draft(draft_id: int):
             "SELECT * FROM drafts WHERE public_id = ?", (draft_id,)
         ).fetchone()
 
-    # make sure the draft exists and the user owns it
+    # check if the draft exists and the user owns it
     if not draft or draft["author_id"] != user["id"]:
         flash("Draft not found.", "warning")
         return redirect(url_for("drafts.list_drafts"))
