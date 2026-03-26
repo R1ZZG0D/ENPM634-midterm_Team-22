@@ -3,6 +3,7 @@
 <div class="card shadow-sm">
     <div class="card-body">
         <h1 class="h3">Mailbox for {{ mailbox_email }}</h1>
+        <!-- publicly accessible inbox for local addresses -->
         {% if public_maildrop %}
         <p class="text-muted">Public maildrop preview for local training addresses.</p>
         {% endif %}

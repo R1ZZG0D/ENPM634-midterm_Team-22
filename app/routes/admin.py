@@ -62,6 +62,7 @@ def dashboard():
         posts=posts,
         csrf_token=generate_csrf_token(),
         admin_token=ADMIN_API_TOKEN,
+        # only show the flag if the admin email was changed from the default
         csrf_takeover_flag=CSRF_FLAG if user["username"] == "admin" and user["email"] != DEFAULT_ADMIN_EMAIL else None,
     )
 

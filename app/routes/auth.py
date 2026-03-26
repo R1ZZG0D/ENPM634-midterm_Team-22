@@ -76,6 +76,7 @@ def login():
 
         # login success
         session["user_id"] = user["id"]
+        # set up a csrf token for this session
         generate_csrf_token()
         flash(f"Welcome back, {user['username']}.", "success")
         return redirect(url_for("posts.index"))

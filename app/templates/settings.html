@@ -26,6 +26,7 @@
             <div class="card-body">
                 <h2 class="h4">Verification</h2>
                 <p>Complete the email verification step if a pending address exists.</p>
+                <!-- no csrf token on this form -->
                 <form method="post" action="{{ url_for('profile.verify_email') }}">
                     <div class="mb-3">
                         <label class="form-label">Email to verify</label>

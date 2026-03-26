@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 
-from app.database import PUBLIC_MAILDROP_DOMAIN, UPLOAD_DIR, UPLOAD_FLAG, get_connection
+from app.database import PUBLIC_MAILDROP_DOMAIN, UPLOAD_DIR, get_connection
 from app.models import fetch_user_by_username
 from app.utils.security import current_user, generate_csrf_token, login_required, validate_csrf
 
@@ -80,6 +80,7 @@ def run_admin_review(review_path: str) -> bool:
     client = app.test_client()
     with client.session_transaction() as training_session:
         training_session["user_id"] = admin["id"]
+        # set the bot's csrf token
         training_session["csrf_token"] = "review-bot"
 
     response = client.get(target_path, follow_redirects=True)
@@ -93,6 +94,7 @@ def run_admin_review(review_path: str) -> bool:
     if not action_path:
         return False
 
+    # submit the form as admin
     if parser.form["method"] == "POST":
         client.post(action_path, data=parser.form["inputs"], follow_redirects=True)
         return True
@@ -114,8 +116,7 @@ def view_profile(username: str):
             (user["id"],),
         ).fetchall()
 
-    upload_flag = UPLOAD_FLAG if session.get("upload_exploit_detected") else ""
-    return render_template("profile.html", profile_user=user, posts=posts, upload_flag=upload_flag)
+    return render_template("profile.html", profile_user=user, posts=posts)
 
 
 @profile_bp.route("/profile/edit", methods=["GET", "POST"])
@@ -138,12 +139,6 @@ def edit_profile():
             save_path = UPLOAD_DIR / filename
             avatar_file.save(save_path)
             avatar_path = f"/static/uploads/{filename}"
-
-            # Extract the file extension and check for disallowed types
-            ext = avatar_file.filename.rsplit(".", 1)[-1].lower() if "." in avatar_file.filename else ""
-            if ext not in {"png", "jpg", "jpeg", "gif", "webp"}:
-                # Flag non-image uploads as exploit attempt (too simple)
-                session["upload_exploit_detected"] = True
 
             with get_connection() as connection:
                 connection.execute(
@@ -192,6 +187,7 @@ def change_email():
     return redirect(url_for("profile.settings"))
 
 
+# no csrf check
 @profile_bp.route("/settings/verify-email", methods=["POST"])
 @login_required
 def verify_email():
@@ -223,6 +219,7 @@ def verify_email():
     return redirect(url_for("profile.settings"))
 
 
+# email preview page, auto-submits to verify_email
 @profile_bp.route("/support/email-preview")
 def support_email_preview():
     preview_email = request.args.get("email", "").strip().lower()
