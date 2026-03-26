@@ -15,8 +15,9 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = "enpm634-midterm-team22-dev-secret"
     app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
-    init_database()
+    init_database() # initialize database
 
+    # register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(posts_bp)
     app.register_blueprint(drafts_bp)

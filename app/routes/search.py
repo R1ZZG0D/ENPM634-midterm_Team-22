@@ -2,16 +2,17 @@ from flask import Blueprint, render_template, request
 
 from app.database import get_connection
 
-
 search_bp = Blueprint("search", __name__)
 
-
+# search for posts with matching title
 @search_bp.route("/search")
 def search():
     query = request.args.get("q", "").strip()
     results = []
     total = 0
 
+    # query posts table for entries with matching title, ordered by creating time
+    # code is vulnerable here, should have used parameterized query
     if query:
         sql = f"""
             SELECT id, title, content
