@@ -52,6 +52,7 @@ def view_post(post_id: int):
         flash("Post not found.", "warning")
         return redirect(url_for("posts.index"))
 
+    # submitted a comment with XSS-like content — flag is passed to template
     xss_training_ready = bool(user and session.get("comment_xss_post_id") == post_id)
     return render_template(
         "post_detail.html",
@@ -165,7 +166,8 @@ def add_comment(post_id: int):
     if not comment_text:
         flash("Comment text cannot be empty.", "danger")
         return redirect(url_for("posts.view_post", post_id=post_id))
-
+        
+    # Raw user input is stored directly into the database, enabling stored XSS
     with get_connection() as connection:
         connection.execute(
             """
