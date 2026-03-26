@@ -178,6 +178,8 @@ def add_comment(post_id: int):
         )
         connection.commit()
 
+    # XSS pattern detection happens AFTER DB insert
+    # Does NOT prevent the XSS, only detects it
     lowered_comment = comment_text.lower()
     if "<" in comment_text or "javascript:" in lowered_comment or "onerror" in lowered_comment or "onload" in lowered_comment:
         session["comment_xss_post_id"] = post_id
