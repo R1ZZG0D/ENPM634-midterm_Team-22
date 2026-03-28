@@ -7,6 +7,8 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = Path(os.environ.get("DB_PATH", ROOT_DIR / "database" / "enpm634_midterm_team22.db"))
 INIT_SQL = ROOT_DIR / "database" / "init.sql"
+SEARCH_DB_PATH = Path(os.environ.get("SEARCH_DB_PATH", ROOT_DIR / "database" / "enpm634_midterm_team22_search.db"))
+SEARCH_INIT_SQL = ROOT_DIR / "database" / "search_init.sql"
 UPLOAD_DIR = ROOT_DIR / "app" / "static" / "uploads"
 DEFAULT_ADMIN_EMAIL = "admin@team22.local"
 PUBLIC_MAILDROP_DOMAIN = "@maildrop.local"
@@ -66,6 +68,51 @@ def get_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
+
+
+def get_search_connection() -> sqlite3.Connection:
+    connection = sqlite3.connect(SEARCH_DB_PATH)
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+def sync_search_database() -> None:
+    SEARCH_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    schema = SEARCH_INIT_SQL.read_text(encoding="utf-8")
+
+    with get_connection() as source_connection, get_search_connection() as search_connection:
+        search_connection.executescript(schema)
+        search_connection.execute("DELETE FROM posts")
+        search_connection.execute("DELETE FROM challenge_flags")
+
+        posts = source_connection.execute(
+            "SELECT id, title, content, created_at FROM posts ORDER BY id"
+        ).fetchall()
+        if posts:
+            search_connection.executemany(
+                """
+                INSERT INTO posts (id, title, content, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                [
+                    (post["id"], post["title"], post["content"], post["created_at"])
+                    for post in posts
+                ],
+            )
+
+        flags = source_connection.execute(
+            "SELECT flag_key, flag_value FROM challenge_flags ORDER BY flag_key"
+        ).fetchall()
+        if flags:
+            search_connection.executemany(
+                """
+                INSERT INTO challenge_flags (flag_key, flag_value)
+                VALUES (?, ?)
+                """,
+                [(flag["flag_key"], flag["flag_value"]) for flag in flags],
+            )
+
+        search_connection.commit()
 
 
 def allocate_public_draft_id(connection: sqlite3.Connection) -> int:
@@ -139,6 +186,7 @@ def ensure_user_profile_review_metadata(connection: sqlite3.Connection) -> None:
 
 def init_database() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SEARCH_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
     with get_connection() as connection:
@@ -152,6 +200,8 @@ def init_database() -> None:
         if user_count == 0:
             seed_database(connection)
         migrate_training_state(connection)
+
+    sync_search_database()
 
     default_avatar = UPLOAD_DIR / "default-avatar.png"
     if not default_avatar.exists():

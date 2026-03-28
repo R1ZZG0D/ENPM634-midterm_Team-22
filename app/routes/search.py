@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request
 
-from app.database import get_connection
+from app.database import get_search_connection
 
 search_bp = Blueprint("search", __name__)
 
@@ -20,7 +20,7 @@ def search():
             WHERE title LIKE '%{query}%'
             ORDER BY created_at DESC
         """
-        with get_connection() as connection:
+        with get_search_connection() as connection:
             results = connection.execute(sql).fetchall()
             total = len(results)
 

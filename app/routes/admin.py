@@ -2,7 +2,7 @@ import os
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
-from app.database import CSRF_FLAG, DEFAULT_ADMIN_EMAIL, get_connection
+from app.database import CSRF_FLAG, DEFAULT_ADMIN_EMAIL, get_connection, sync_search_database
 from app.utils.security import admin_required, current_user, generate_csrf_token, login_required, validate_csrf
 
 
@@ -78,6 +78,7 @@ def delete_any_post(post_id: int):
     with get_connection() as connection:
         connection.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         connection.commit()
+    sync_search_database()
 
     flash("Post removed from the platform.", "info")
     return redirect(url_for("admin.dashboard"))

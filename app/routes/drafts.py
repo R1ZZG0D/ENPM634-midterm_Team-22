@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from app.database import allocate_public_draft_id, get_connection
+from app.database import allocate_public_draft_id, get_connection, sync_search_database
 from app.utils.security import current_user, generate_csrf_token, login_required, validate_csrf
 
 
@@ -158,6 +158,7 @@ def publish_draft(draft_id: int):
         )
         connection.execute("UPDATE drafts SET is_published = 1 WHERE id = ?", (draft["id"],))
         connection.commit()
+    sync_search_database()
 
     flash("Draft published.", "success")
     return redirect(url_for("posts.index"))

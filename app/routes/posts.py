@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
-from app.database import STORED_XSS_FLAG, get_connection
+from app.database import STORED_XSS_FLAG, get_connection, sync_search_database
 from app.models import fetch_post
 from app.utils.security import current_user, generate_csrf_token, login_required, validate_csrf
 
@@ -96,6 +96,7 @@ def create_post():
                 (title, content, user["id"], datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
             )
             connection.commit()
+        sync_search_database()
 
         flash("Post published.", "success")
         return redirect(url_for("posts.index"))
@@ -126,6 +127,7 @@ def edit_post(post_id: int):
                 (title, content, post_id),
             )
             connection.commit()
+        sync_search_database()
 
         flash("Post updated.", "success")
         return redirect(url_for("posts.view_post", post_id=post_id))
@@ -149,6 +151,7 @@ def delete_post(post_id: int):
     with get_connection() as connection:
         connection.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         connection.commit()
+    sync_search_database()
 
     flash("Post deleted.", "info")
     return redirect(url_for("posts.index"))
