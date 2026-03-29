@@ -5,7 +5,8 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_ENV=production
-ENV DB_PATH=/app/database/enpm634_midterm_team22.db
+ENV DB_PATH=/app/data/enpm634_midterm_team22.db
+ENV SEARCH_DB_PATH=/app/data/enpm634_midterm_team22_search.db
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

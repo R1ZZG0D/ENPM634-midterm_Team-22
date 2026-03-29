@@ -5,7 +5,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - enpm634_midterm_team22_db:/app/database
+      - enpm634_midterm_team22_db:/app/data
       - enpm634_midterm_team22_uploads:/app/app/static/uploads
 
 volumes:
