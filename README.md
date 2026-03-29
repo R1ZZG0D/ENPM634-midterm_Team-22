@@ -29,5 +29,5 @@ This is a microblogging site in which users can make short text posts and leave 
 - Search: Posts can be searched through the search page and matching titles are shown.
 - Admin dashboard: Admin users can view all users and remove posts.
 - Email settings: Users can request an email change and complete a verification step from settings.
-- Mailbox view: Each account has a mailbox page that shows messages sent to the current account email. (Use the .local domain to receive messages here when registering).
+- Mailbox view: Each account has a mailbox page that shows messages sent to the current account email. (Use the .local domain to receive messages here when registering, such as @test.local).
 - Password reset: Users can request a password reset link and set a new password through the recovery flow.
