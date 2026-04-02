@@ -2,6 +2,14 @@
 
 ## Run Instructions
 
+To pull and run the docker image:
+ 
+ ```bash
+ docker pull barns021/enpm634-midterm-team22
+
+ docker run -p 5000:5000 --name enpm634-app barns021/enpm634-midterm-team22
+ ```
+
 From the repository root:
 
 ```bash
