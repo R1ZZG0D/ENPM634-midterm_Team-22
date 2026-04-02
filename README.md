@@ -2,26 +2,40 @@
 
 ## Run Instructions
 
-To pull and run the docker image:
+Use the published Docker Hub image:
  
  ```bash
- docker pull barns021/enpm634-midterm-team22
+ docker pull r1zzg0d/enpm634-midterm-team22:latest
 
- docker run -p 5000:5000 --name enpm634-app barns021/enpm634-midterm-team22
+ docker run -p 5000:5000 --name enpm634-app r1zzg0d/enpm634-midterm-team22:latest
  ```
 
-From the repository root:
+Open the application at [http://localhost:5000](http://localhost:5000).
+
+The published image supports both `linux/amd64` and `linux/arm64`.
+
+### Troubleshooting
+
+If port `5000` is already in use, start the container on a different host port such as `5008`:
 
 ```bash
-docker compose up -d --build
+docker run -p 5008:5000 --name enpm634-app r1zzg0d/enpm634-midterm-team22:latest
 ```
 
-Open the application at [http://localhost:5000](http://localhost:5000).
+Then open the application at [http://localhost:5008](http://localhost:5008).
+
+If you get a container-name conflict because `enpm634-app` already exists, remove the old container and start it again:
+
+```bash
+docker rm -f enpm634-app
+docker run -p 5000:5000 --name enpm634-app r1zzg0d/enpm634-midterm-team22:latest
+```
 
 To stop the application:
 
 ```bash
-docker compose down
+docker stop enpm634-app
+docker rm enpm634-app
 ```
 
 ## Features

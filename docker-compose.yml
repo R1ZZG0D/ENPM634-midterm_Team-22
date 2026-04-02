@@ -1,6 +1,6 @@
 services:
   enpm634_midterm_team22:
-    image: barns021/enpm634-midterm-team22:latest
+    image: r1zzg0d/enpm634-midterm-team22:latest
     container_name: enpm634_midterm_team22
     ports:
       - "5000:5000"
